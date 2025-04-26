@@ -14,8 +14,6 @@ load_dotenv()
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# model = genai.GenerativeModel(model_name="models/gemini-1.5-pro-latest")
-
 # server_params = StdioServerParameters(
 #     command="mcp-flight-search",
 #     args=["--connection_type", "stdio"],
@@ -23,7 +21,8 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 # )
 
 async def translate_response(words, paragraphs, language):
-    prompt = f"Give me a translation of {words} into {language}. This was used in the following context: {paragraphs}"
+    prompt = f"""Give me a translation of {words} into {language}. This was used in the following context: {paragraphs}
+                Provide the translation in three categories: translation, explanation, and usage examples."""
     response = client.models.generate_content(
                 model="gemini-2.5-pro-exp-03-25",
                 contents=prompt,
