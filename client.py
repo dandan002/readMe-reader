@@ -1,6 +1,6 @@
 import os
 import json
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify 
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -9,13 +9,11 @@ import asyncio
 # Load environment variables
 load_dotenv()
 
-# Initialize the Gemini client
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
-
 
 # Create Flask app
 app = Flask(__name__)
+
 
 # Define the asynchronous translate function
 async def translate_response(words, context, language):
@@ -53,14 +51,14 @@ def translate():
 
      
     try:
-        gemini_response = asyncio.run(translate_response(target_words, context, target_language))
+        gemini_response = asyncio.run(translate_response(target_words, context, target_language)) 
 
-        # response.text contains the raw assistant reply
-        assistant_output = gemini_response.text.strip()
-        if assistant_output.startswith("```json"):
-            assistant_output = assistant_output.replace("```json", "").replace("```", "").strip()
+        # response.text contains the raw assistant reply 
+        assistant_output = gemini_response.text.strip() 
+        if assistant_output.startswith("```json"): 
+            assistant_output = assistant_output.replace("```json", "").replace("```", "").strip() 
         elif assistant_output.startswith("```"):
-            assistant_output = assistant_output.replace("```", "").strip()
+            assistant_output = assistant_output.replace("```", "").strip() 
 
         result = json.loads(assistant_output)
     except json.JSONDecodeError: 
