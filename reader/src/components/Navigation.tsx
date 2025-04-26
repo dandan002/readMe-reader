@@ -11,11 +11,13 @@ const Navigation = () => {
         </Link>
         
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" className="hidden md:inline-flex">
-            Get Started
-          </Button>
-          <Button className="text-white">
+          <Button variant="ghost" className="hidden md:inline-flex"
+           onClick={() => window.location.href = "/learn-more"}>
             Learn More
+          </Button>
+          <Button className="text-white"
+            onClick={() => window.location.href = "/get-started"}>
+            Get Started
           </Button>
         </div>
       </div>
