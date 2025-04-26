@@ -113,7 +113,6 @@ const Reader = () => {
   );
 };
 
-export default Reader;
 
 //#region ─────────── Components ───────────
 
@@ -166,14 +165,115 @@ const DocumentViewer = ({ file }: { file: { file: File; url: string } }) => {
  * Edge, Safari, Firefox) support this natively. The iframe is sized
  * to fill the available reader pane.
  */
-const PdfViewer = ({ url }: { url: string }) => (
-  <iframe
-    src={url}
-    title="PDF document"
-    className="w-full h-full"
-    style={{ border: "none" }}
-  />
-);
+
+import { pdfjs, Document, Page } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+
+// Set the worker manually
+pdfjs.GlobalWorkerOptions.workerSrc =
+  "https://unpkg.com/pdfjs-dist@4.8.189/build/pdf.worker.min.js";
+
+function PdfViewer({ url }: { url: string }) {
+  const [numPages, setNumPages] = useState<number | null>(null);
+
+  return (
+    <div className="flex flex-col items-center p-4">
+      <Document
+        file={url}
+        onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+        onLoadError={(error) => console.error("Error loading PDF:", error)}
+      >
+        {Array.from({ length: numPages || 0 }, (_, i) => (
+          <Page
+            key={`page_${i + 1}`}
+            pageNumber={i + 1}
+            width={window.innerWidth > 1024 ? 700 : window.innerWidth - 40}
+            className="mb-4 shadow"
+          />
+        ))}
+      </Document>
+    </div>
+  );
+}
+
+// export default PdfViewer;
+
+// import "react-pdf/dist/esm/Page/AnnotationLayer.css";
+// import "react-pdf/dist/esm/Page/TextLayer.css";
+// import { pdfjs, Document, Page } from "react-pdf";
+
+
+// // pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
+// pdfjs.GlobalWorkerOptions.workerSrc =
+//   `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/pdf.worker.min.js`;
+
+// // pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+// //   "pdfjs-dist/build/pdf.worker.min.js",
+// //   import.meta.url
+// // ).toString();
+
+// const PdfViewer = ({ url }: { url: string }) => {
+//   const [numPages, setNumPages] = useState<number | null>(null);
+//   const [highlightedText, setHighlightedText] = useState<string>("");
+//   console.log("PDF URL:", url);
+//   const handleTextSelection = () => {
+//     const selection = window.getSelection();
+//     if (selection && selection.toString().trim() !== "") {
+//       setHighlightedText(selection.toString());
+//     }
+//   };
+
+//   const handleDoubleClick = () => {
+//     const selection = window.getSelection();
+//     if (selection && selection.toString().trim() !== "") {
+//       setHighlightedText(selection.toString());
+//     }
+//   };
+
+//   const handleCtrlA = (e: KeyboardEvent) => {
+//     if (e.ctrlKey && e.key === "a") {
+//       e.preventDefault();
+//       const selection = document.body.innerText; // Select all text
+//       setHighlightedText(selection);
+//     }
+//   };
+
+//   useEffect(() => {
+//     document.addEventListener("mouseup", handleTextSelection);
+//     document.addEventListener("dblclick", handleDoubleClick);
+//     document.addEventListener("keydown", handleCtrlA);
+//     return () => {
+//       document.removeEventListener("mouseup", handleTextSelection);
+//       document.removeEventListener("dblclick", handleDoubleClick);
+//       document.removeEventListener("keydown", handleCtrlA);
+//     };
+//   }, []);
+
+//   return (
+//     <div className="flex flex-col items-center p-4">
+//       <Document
+//         file={url}
+//         onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+//         onLoadError={(error) => console.error("Error loading PDF:", error)}
+//       >
+//         {Array.from({ length: numPages || 0 }, (_, i) => (
+//           <Page
+//             key={`page_${i + 1}`}
+//             pageNumber={i + 1}
+//             width={window.innerWidth > 1024 ? 700 : window.innerWidth - 40}
+//             className="mb-4 shadow"
+//           />
+//         ))}
+//       </Document>
+//       {highlightedText && (
+//         <div className="p-4 bg-gray-100">
+//           <strong>Highlighted Text:</strong> {highlightedText}
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
 
 /** EPUB Viewer – epub.js (v0.3.x) */
 import ePub, { Book, Rendition } from "epubjs";
@@ -249,5 +349,7 @@ const LoaderSpinner = () => (
     <Loader className="w-6 h-6" />
   </div>
 );
+
+export default Reader;
 
 //#endregion
