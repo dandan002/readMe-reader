@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import GetStarted from "./pages/GetStarted";
 import LearnMore from "./pages/LearnMore";
+import Reader from "./pages/Reader";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/get-started" element={<GetStarted />} />
           <Route path="/learn-more" element={<LearnMore />} />
+          <Route path="/reader" element={<Reader />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
