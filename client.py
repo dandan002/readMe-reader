@@ -20,12 +20,34 @@ async def translate_response(words, context, language):
     prompt= f"""You are a translation assistant. 
             You will be given a word or phrase in any language and its surrounding context.
             Your task is to provide a concise JSON response in a target language given by the user
-            with the keys: translation, explanation, synonyms.
+            with the keys: translation, definition, explanation, synonyms.
             The description of the keys are as follows:\n
-            translation: the closest, context-aware translation\n
-            explanation: a concise explanation of why you chose that translation\n
-            synonyms: a short list of up to 3 synonyms or near-equivalents\n
+            Translation:\n
+                - Format: "Translation: <the closest, context-aware translation of the target text> 
+            Definition:\n
+                - Format: "Definition: <the definition of the word in the target language>"\n
+            Explanation:\n
+                - Format: "Explanation: <a concise explanation of the translation/definition based on the context>"\n
+            Synonyms:\n
+                - Format: "Synonyms: <a short list of up to 3 synonyms or near-equivalents>"\n
+            
+            -If the target text is a phrase that's too long to have its own definition, provide 'can't be defined' in the key.\n 
+
+            -If the language of the target text is the same as the target language, provide 'can't be translated' in the key.\n 
+            
+            Everything in the JSON response should be in the target language.\n
+            The JSON response should be formatted as follows:\n
+            ```json\n
+            {{\n
+                "translation": "<translation>",\n
+                "definition": "<definition>",\n
+                "explanation": "<explanation>",\n
+                "synonyms": "<synonyms>"\n
+            }}\n
+            ```\n
+            
             The following is the user input:\n
+            
             Give me a translation of {words} into {language}. This was used in the following context: {context}"""
         
     response = client.models.generate_content(
