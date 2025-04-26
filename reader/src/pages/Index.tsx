@@ -122,7 +122,8 @@ const Index = () => {
         <section className="py-24 bg-primary text-white px-6 lg:px-8">
           <div className="mx-auto max-w-7xl text-center">
             <h2 className="text-3xl sm:text-5xl font-bold mb-8">Ready to begin?</h2>
-            <button className="px-8 py-4 bg-accent text-primary rounded-full font-semibold hover:bg-accent/90 transition-colors">
+            <button className="px-8 py-4 bg-accent text-primary rounded-full font-semibold hover:bg-accent/90 transition-colors"
+              onClick={() => window.location.href = "/get-started"}>
               Get Started
             </button>
           </div>

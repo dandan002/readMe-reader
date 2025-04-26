@@ -9,7 +9,7 @@ const LearnMore = () => {
       
       <main className="pt-16 container mx-auto px-4 py-12">
         <section className="text-center">
-          <h1 className="text-4xl font-bold mb-6 text-primary">Learn More About Us</h1>
+          <h1 className="text-4xl font-bold mb-6 mt-12 text-primary">Learn More About Us</h1>
           <p className="text-secondary max-w-2xl mx-auto">
             Discover the features, mission, and vision behind our innovative application.
           </p>
