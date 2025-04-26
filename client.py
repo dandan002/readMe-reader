@@ -32,32 +32,42 @@ def translate():
     if not words or not context or not language:
         return jsonify({"error": "Missing required fields"}), 400
     
-    
-    # Call the translation function
-    translation = asyncio.run(translate_response(words, context, language))
 
-    return jsonify({"translation": translation})
+    # Call the translation function
+    gemini_response = asyncio.run(translate_response(words, context, language))
+
+    return jsonify({"translation": gemini_response})
 
 async def translate_response(words, paragraphs, language):
-    prompt = f"""Give me a translation of {words} into {language}. This was used in the following context: {paragraphs}
-                Provide the translation in three categories: translation, explanation, and usage examples."""
+    prompt= f"""You are a translation assistant. 
+            You will be given a word or phrase in any language and its surrounding context.
+            Your task is to provide a concise JSON response in a target language given by the user
+            with the keys: translation, explanation, synonyms.
+            The description of the keys are as follows:\n
+            translation: the closest, context-aware translation\n
+            explanation: a concise explanation of why you chose that translation\n
+            synonyms: a short list of up to 3 synonyms or near-equivalents\n
+            The following is the user input:\n
+            Give me a translation of {words} into {language}. This was used in the following context: {paragraphs}"""
+        
     response = client.models.generate_content(
-                model="gemini-2.5-pro-exp-03-25",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0,
-                    tools=[],
-                ),
-            )
+        model="gemini-2.5-pro-exp-03-25",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            temperature=0,
+            tools=[],
+        ),
+    )
+    
     return response.text
 
 
 
-async def run(): 
-    # async with stdio_client(server_params) as (read, write):
-    #     async with ClientSession(read, write) as session:
-    gemini_response = await translate_response("Hello", "I am a student", "French")
-    print(gemini_response)
+# async def run(): 
+#     # async with stdio_client(server_params) as (read, write):
+#     #     async with ClientSession(read, write) as session:
+#     gemini_response = await translate_response("Hello", "I am a student", "French")
+#     print(gemini_response)
         #     await session.initialize()
         #     # Remove debug prints
 
@@ -96,4 +106,5 @@ async def run():
 
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    # asyncio.run(run())
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "8080")), debug=True)
