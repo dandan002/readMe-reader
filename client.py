@@ -1,5 +1,6 @@
 from google import genai
 from google.genai import types
+from flask import Flask, request, jsonify
 import os
 from dotenv import load_dotenv
 #manages communication between client/server  and stdio allows in diff enviroments 
@@ -11,14 +12,31 @@ import asyncio
 
 load_dotenv()   
 
+app = Flask(__name__)
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# server_params = StdioServerParameters(
-#     command="mcp-flight-search",
-#     args=["--connection_type", "stdio"],
-#     env={"SERP_API_KEY": os.getenv("SERP_API_KEY")},
-# )
+server_params = StdioServerParameters(
+    command="mcp-translate-service",
+    args=["--connection_type", "stdio"],
+    env={},
+)
+
+@app.route("/translate", methods=["POST"])
+def translate():
+    data = request.get_json() # gets json file
+    words = data.get("words") 
+    context = data.get("context")
+    language = data.get("language")
+
+    if not words or not context or not language:
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    
+    # Call the translation function
+    translation = asyncio.run(translate_response(words, context, language))
+
+    return jsonify({"translation": translation})
 
 async def translate_response(words, paragraphs, language):
     prompt = f"""Give me a translation of {words} into {language}. This was used in the following context: {paragraphs}
