@@ -9,12 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 /**
- * Reader page
- * ────────────────────────────────────────────────────────────
- * Implements client‑side viewing for PDF (native iframe),
- * EPUB (epub.js), and DOCX (mammoth).
- * Translation panel is a placeholder – wire it to Flask later.
- */
+ * Reader page * ──────────────────────────────────────────────────────────── * Implements client‑side viewing for PDF (react‑pdf + pdfjs‑dist), * EPUB (epub.js), and DOCX (mammoth). * Translation panel is a placeholder – wire it to Flask later. */
 
 
 
@@ -242,22 +237,38 @@ const DocumentViewer = ({ file, setFullText }: {
   }
 };
 
-/**
- * PDF Viewer – native browser rendering via iframe
- * ------------------------------------------------------------------
- * We rely on the browser's built‑in PDF renderer, which removes the
- * need for react‑pdf / pdfjs‑dist. Most modern browsers (Chrome,
- * Edge, Safari, Firefox) support this natively. The iframe is sized
- * to fill the available reader pane.
- */
-const PdfViewer = ({ url }: { url: string }) => (
-  <iframe
-    src={url}
-    title="PDF document"
-    className="w-full h-full"
-    style={{ border: "none" }}
-  />
-);
+/** PDF Viewer – react‑pdf + pdfjs‑dist */
+import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+// Worker: use pdfjs‑dist to avoid version mismatches
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.js",
+  import.meta.url
+).toString();
+
+const PdfViewer = ({ url }: { url: string }) => {
+  const [numPages, setNumPages] = useState<number | null>(null);
+
+  return (
+    <div className="flex flex-col items-center p-4">
+      <Document
+        file={url}
+        loading={<LoaderSpinner />}
+        onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+      >
+        {Array.from({ length: numPages || 0 }, (_, i) => (
+          <Page
+            key={`page_${i + 1}`}
+            pageNumber={i + 1}
+            width={window.innerWidth > 1024 ? 700 : window.innerWidth - 40}
+            className="mb-4 shadow"
+          />
+        ))}
+      </Document>
+    </div>
+  );
+};
 
 /** EPUB Viewer – epub.js (v0.3.x) */
 import ePub, { Book, Rendition } from "epubjs";
@@ -347,5 +358,3 @@ const LoaderSpinner = () => (
     <Loader className="w-6 h-6" />
   </div>
 );
-
-//#endregion
