@@ -157,7 +157,7 @@ const Reader = () => {
               <SelectTrigger className="w-full mb-2">
                 <SelectValue placeholder="Choose language" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background">
                 {languages.map((lang) => (
                   <SelectItem key={lang} value={lang}>
                     {lang}

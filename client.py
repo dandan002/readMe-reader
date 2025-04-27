@@ -33,9 +33,9 @@ async def translate_response(words, context, language):
             Synonyms:\n
                 - Format: "Synonyms: <a short list of up to 3 synonyms or near-equivalents>"\n
             
-            -If the target text is a phrase that's too long to have its own definition, provide 'can't be defined' in the key.\n 
+            -If the target text is a phrase that's too long to have its own definition, provide 'X' in the key.\n 
 
-            -If the language of the target text is the same as the target language, provide 'can't be translated' in the key.\n 
+            -If the language of the target text is the same as the target language, provide 'X' in the key.\n 
             
             Everything in the JSON response should be in the target language.\n
             The JSON response should be formatted as follows:\n
