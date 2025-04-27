@@ -1,4 +1,4 @@
-import { UploadCloud, File, Loader, BookOpen } from "lucide-react";
+import { UploadCloud, File, Loader, BookOpen, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -50,6 +50,7 @@ const models = [
     "meta-llama/llama-4-maverick-17b-128e-instruct",
     "llama-3.3-70b-versatile",
     "qwen-qwq-32b",
+    "llama-3.1-8b-instant"
   ];
 
 const Reader = () => {
@@ -68,7 +69,24 @@ const Reader = () => {
   const [targetLanguage, setTargetLanguage] = useState<string>(languages[0]);
   const [targetModel, setTargetModel] = useState<string>(models[0]);
 
-  //#endregion
+// Clear everything
+  const clearTranslations = useCallback(() => {
+    setTranslations([]);
+    setSelectedText("");
+    setContext("");
+    setResponse(null);
+  }, []);
+
+// ─── Clear on switch ───────────────────────────────────────────────────────────
+useEffect(() => {
+  // whenever language, model or file changes, wipe out all previous translations
+  setTranslations([]);
+  setSelectedText("");
+  setContext("");
+  setResponse(null);
+}, [targetLanguage, targetModel, activeId]);
+
+// ────────────────────────────────────────────────────────────────────────────────
 
   //#region ───────────── Upload helpers ────────────
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -233,6 +251,7 @@ const Reader = () => {
                 translations={translations}
                 loading={loading}
                 toggleExpand={toggleExpand}
+                clearTranslations={clearTranslations}
               />
             </div>
           </section>
@@ -502,17 +521,29 @@ const TranslationPanel = ({
   translations,
   loading,
   toggleExpand,
+  clearTranslations,
 }: {
   translations: { id: string; selectedText: string; context: string; response: any; expanded: boolean }[];
   loading: boolean;
   toggleExpand: (id: string) => void;
+  clearTranslations: () => void;
 }) => (
   <div className="h-full flex flex-col overflow-auto">
     <Card className="flex-1 rounded-none border-l-0">
       <CardHeader>
+      <div className="flex justify-between items-center w-full">
         <CardTitle className="flex items-center gap-2">
           <BookOpen className="w-5 h-5" /> Translations
         </CardTitle>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={clearTranslations}
+            disabled={translations.length === 0}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       </CardHeader>
       <Separator />
       <CardContent className="flex-1 overflow-auto px-4 py-2 text-sm text-secondary">

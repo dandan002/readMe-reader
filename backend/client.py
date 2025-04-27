@@ -13,8 +13,8 @@ load_dotenv()
 
 # Define which models belong to which backend
 GOOGLE_MODELS = {
-    "gemini-2.5-flash-preview-04-17",
     "gemini-2.0-flash",
+    "gemini-2.5-flash-preview-04-17",
     "gemini-1.5-pro",
 }
 
@@ -23,20 +23,21 @@ GROQ_MODELS = {
     "meta-llama/llama-4-maverick-17b-128e-instruct",
     "llama-3.3-70b-versatile",
     "qwen-qwq-32b",
+    "llama-3.1-8b-instant"
 }
 
 # Instantiate clients
 gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 groq_client   = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
 
-async def translate_with_gemini(model: str, words: str, context: str, language: str) -> str:
+def create_prompt(model: str, words: str, context: str, language: str) -> str:
     prompt = f"""You are a translation assistant. 
             You will be given a word or phrase in any language and its surrounding context.
             Your task is to provide a concise JSON response in a target language given by the user
             with the keys: translation, definition, explanation, synonyms.
             The description of the keys are as follows:\n
             Translation:\n
-                - Format: "<the closest, context-aware translation of the target text> 
+                - Format: "<the closest, context-aware translation of the target text>"\n
             Definition:\n
                 - Format: "<the definition of the word in the target language>"\n
             Explanation:\n
@@ -44,10 +45,10 @@ async def translate_with_gemini(model: str, words: str, context: str, language: 
             Synonyms:\n
                 - Format: "<a short list of up to 3 synonyms or near-equivalents>"\n
             
-            -If the target text is a phrase that's too long to have its own definition, provide 'X' in the key.\n 
+            -If the target text is a phrase that's too long to have its own definition, (longer than one word), provide 'X' in the definition and synonym keys.\n 
 
             -If the language of the target text is the same as the target language, provide 'X' in the key.\n 
-            
+
             Everything in the JSON response should be in the target language.\n
             The JSON response should be formatted as follows:\n
             ```json\n
@@ -62,6 +63,10 @@ async def translate_with_gemini(model: str, words: str, context: str, language: 
             The following is the user input:\n
             
             Give me a translation of {words} into {language}. This was used in the following context: {context}"""
+    return prompt
+
+async def translate_with_gemini(model: str, words: str, context: str, language: str) -> str:
+    prompt = create_prompt(model, words, context, language)
     resp = gemini_client.models.generate_content(
         model=model,
         contents=prompt,
@@ -80,38 +85,7 @@ async def translate_with_gemini(model: str, words: str, context: str, language: 
     return txt
 
 async def translate_with_groq(model: str, words: str, context: str, language: str) -> str:
-    prompt = f"""You are a translation assistant. 
-            You will be given a word or phrase in any language and its surrounding context.
-            Your task is to provide a concise JSON response in a target language given by the user
-            with the keys: translation, definition, explanation, synonyms.
-            The description of the keys are as follows:\n
-            Translation:\n
-                - Format: "Translation: <the closest, context-aware translation of the target text> 
-            Definition:\n
-                - Format: "Definition: <the definition of the word in the target language>"\n
-            Explanation:\n
-                - Format: "Explanation: <a concise explanation of the translation/definition based on the context>"\n
-            Synonyms:\n
-                - Format: "Synonyms: <a short list of up to 3 synonyms or near-equivalents>"\n
-            
-            -If the target text is a phrase that's too long to have its own definition, provide 'X' in the key.\n 
-
-            -If the language of the target text is the same as the target language, provide 'X' in the key.\n 
-            
-            Everything in the JSON response should be in the target language.\n
-            The JSON response should be formatted as follows:\n
-            ```json\n
-            {{\n
-                "translation": "<translation>",\n
-                "definition": "<definition>",\n
-                "explanation": "<explanation>",\n
-                "synonyms": "<synonyms>"\n
-            }}\n
-            ```\n
-            
-            The following is the user input:\n
-            
-            Give me a translation of {words} into {language}. This was used in the following context: {context}"""
+    prompt = prompt = create_prompt(model, words, context, language)
     chat = await groq_client.chat.completions.create(
         model=model,
         messages=[{"role": "system", "content": prompt}],
