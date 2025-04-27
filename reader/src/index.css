@@ -48,5 +48,23 @@
 @layer utilities {
   .hover-float-up {
     @apply transform transition-transform duration-300 hover:-translate-y-2;
+    
+  }
+}
+
+@layer utilities {
+  @keyframes slideDownFade {
+    0% {
+      opacity: 0;
+      transform: translateY(-30px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-down {
+    animation: slideDownFade 0.6s ease-out forwards;
   }
 }
