@@ -24,6 +24,9 @@ const Reader = () => {
   const [selectedText, setSelectedText] = useState<string>("");
   const [context, setContext] = useState<string>("");
   const [response, setResponse] = useState<any>(null); // Store the backend response
+  const [translations, setTranslations] = useState<
+    { id: string; selectedText: string; context: string; response: any; expanded: boolean }[]
+  >([]);
   const [loading, setLoading] = useState<boolean>(false);
 
   //#endregion
@@ -52,6 +55,8 @@ const Reader = () => {
 
   const handleTextSelect = async (text: string, context: string, language: string) => {
     console.log("Selected Text:", text); // Log the selected text
+    console.log("Context:", context); // Log the context
+    console.log("Language:", language); // Log the target language
     setSelectedText(text); // Update the state with the selected text
     setContext(context); // Update the context state
 
@@ -79,7 +84,11 @@ const Reader = () => {
 
       const data = await response.json();
       console.log("Backend Response:", data);
-      setResponse(data); // Store the backend response
+
+      setTranslations((prev) => [
+        { id: crypto.randomUUID(), selectedText: text, context, response: data, expanded: true },
+        ...prev.map((t) => ({ ...t, expanded: false })), // Collapse all other translations
+      ]);
     } catch (error) {
       console.error("Error:", error);
     } finally {
@@ -87,6 +96,11 @@ const Reader = () => {
     }
   };
 
+  const toggleExpand = (id: string) => {
+    setTranslations((prev) =>
+      prev.map((t) => ({ ...t, expanded: t.id === id ? !t.expanded : false }))
+    );
+  };
 
   //#endregion
 
@@ -152,10 +166,9 @@ const Reader = () => {
             </div>
             <div className="hidden md:block col-span-4 lg:col-span-3 h-full">
               <TranslationPanel
-                selectedText={selectedText}
-                context={context}
-                response={response}
+                translations={translations}
                 loading={loading}
+                toggleExpand={toggleExpand}
               />
             </div>
           </section>
@@ -286,6 +299,8 @@ const DocxViewer = ({ file, onTextSelect }: {
       const parentElement = selection.anchorNode?.parentElement;
       const fullText = parentElement?.textContent || ""; // Get the full text of the parent element
       const context = getContext(selectedText, fullText); // Extract context
+      console.log("Selected Text:", selectedText);
+      console.log("Context:", context);
       const language = "Chinese"; // Set the target language (you can modify this as needed)
       onTextSelect(selectedText, context, language); // Pass the selected text and context to the parent
     }
@@ -321,38 +336,50 @@ const DocxViewer = ({ file, onTextSelect }: {
 
 /** Translation placeholder */
 const TranslationPanel = ({
-  selectedText,
-  context,
-  response,
+  translations,
   loading,
+  toggleExpand,
 }: {
-  selectedText: string;
-  context: string;
-  response: any;
+  translations: { id: string; selectedText: string; context: string; response: any; expanded: boolean }[];
   loading: boolean;
+  toggleExpand: (id: string) => void;
 }) => (
-  <div className="h-full flex flex-col">
+  <div className="h-full flex flex-col overflow-auto">
     <Card className="flex-1 rounded-none border-l-0">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5" /> Translation & Context
+          <BookOpen className="w-5 h-5" /> Translations
         </CardTitle>
       </CardHeader>
       <Separator />
-      <CardContent className="flex-1 overflow-auto px-6 py-4 text-sm text-secondary">
-        {loading ? (
-          <LoaderSpinner />
-        ) : response ? (
-          <div>
-            <p><strong>Selected Text:</strong> {selectedText}</p>
-            <p><strong>Context:</strong> {context}</p>
-            <p><strong>Translation:</strong> {response.translation}</p>
-            <p><strong>Definition:</strong> {response.definition}</p>
-            <p><strong>Explanation:</strong> {response.explanation}</p>
-            <p><strong>Synonyms:</strong> {response.synonyms}</p>
+      <CardContent className="flex-1 overflow-auto px-4 py-2 text-sm text-secondary">
+        {loading && <LoaderSpinner />}
+        {translations.map((t) => (
+          <div
+            key={t.id}
+            className={`border rounded p-3 mb-2 cursor-pointer ${
+              t.expanded ? "border-primary bg-gray-100" : "border-gray-300"
+            }`}
+            onClick={() => toggleExpand(t.id)}
+          >
+            {t.expanded ? (
+              <div>
+                <p><strong>Selected Text:</strong> {t.selectedText}</p>
+                <p><strong>Context:</strong> {t.context}</p>
+                <p><strong>Translation:</strong> {t.response.translation}</p>
+                <p><strong>Definition:</strong> {t.response.definition}</p>
+                <p><strong>Explanation:</strong> {t.response.explanation}</p>
+                <p><strong>Synonyms:</strong> {t.response.synonyms}</p>
+              </div>
+            ) : (
+              <div>
+                <p className="truncate"><strong>Selected Text:</strong> {t.selectedText}</p>
+              </div>
+            )}
           </div>
-        ) : (
-          <p>Highlight text in the document to see translations and contextual examples here.</p>
+        ))}
+        {!loading && translations.length === 0 && (
+          <p className="text-center text-secondary">Highlight text to see translations here.</p>
         )}
       </CardContent>
     </Card>
