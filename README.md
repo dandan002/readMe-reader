@@ -9,8 +9,8 @@ cd frontend
 npm install
 npm run dev
 ~~~
+In a separate terminal starting from the root directory,
 ~~~
-cd ..
 cd backend
 python client.py
 ~~~
