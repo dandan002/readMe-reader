@@ -320,6 +320,7 @@ const PdfViewer = ({ url }: { url: string }) => (
 
 /** EPUB Viewer – epub.js (v0.3.x) */
 import ePub, { Book, Rendition } from "epubjs";
+import { set } from "date-fns";
 const EpubViewer = ({
   url,
   file,
@@ -340,46 +341,54 @@ const EpubViewer = ({
   const [inputPage, setInputPage] = useState<number>(1);
 
   useEffect(() => {
+    console.log("EPUB Viewer mounted");
     const init = async () => {
       if (!containerRef.current) return;
 
-      //Actually read the file
-      const arrayBuffer = await file.arrayBuffer();
+      if (renditionRef.current) {
+        renditionRef.current.destroy();
+        renditionRef.current = null;
+      }
+      if (bookRef.current) {
+        bookRef.current.destroy();
+        bookRef.current = null;
+      }
 
-      //Pass raw bytes, NOT blob url
+      // Reset states
+      setCurrentPage(1);
+      setTotalPages(0);
+
+      console.log("Initializing EPUB viewer");
+
+      // Load the EPUB file
+      const arrayBuffer = await file.arrayBuffer();
       bookRef.current = ePub(arrayBuffer);
 
       renditionRef.current = bookRef.current.renderTo(containerRef.current, {
         width: "100%",
         height: "100%",
+        flow: "paginated", // Use paginated flow
       });
       renditionRef.current.display();
 
-      await bookRef.current.ready;
-      await bookRef.current.locations.generate(5000);
-
-      setTotalPages(bookRef.current.locations.length())
-      renditionRef.current.on("relocated", (location) => {
-        if (!bookRef.current?.locations || !location?.start?.cfi) {
-          setCurrentPage(1);
-          return;
+      bookRef.current.loaded.spine.then((spine) => {
+        if (spine){
+          setTotalPages(spine.length);
         }
-      
-        const percentage = bookRef.current.locations.percentageFromCfi(location.start.cfi);
-        const page = Math.round(percentage * bookRef.current.locations.length()); // 🔥
-        setCurrentPage(page || 1);
       });
 
       // Add text selection capture
-      renditionRef.current.on('selected', (cfiRange, contents) => {
-        const selection = contents.window.getSelection()?.toString();
-        if (selection && selection.trim().length > 0) {
-          const selectedText = selection.trim();
-          const context = selectedText;
-          onTextSelect(selectedText, context, targetLanguage);
-        }
-      });
-    };
+    renditionRef.current.on("selected", (cfiRange, contents) => {
+      console.log("Text selected:", cfiRange);
+      const selection = contents.window.getSelection()?.toString();
+      if (selection && selection.trim().length > 0) {
+        const selectedText = selection.trim();
+        const context = selectedText; // For EPUB, we can use the selected text as context
+        onTextSelect(selectedText, context, targetLanguage);
+        // renditionRef.current?.display(cfiRange); // Highlight the selected text
+      }
+    });
+  };
     init();
 
     return () => {
@@ -388,66 +397,42 @@ const EpubViewer = ({
     };
   }, [file]);
 
-  const goNext = () => {
-    renditionRef.current?.next();
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      renditionRef.current?.next();
+      setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    }
   };
 
-  const goPrev = () => {
-    renditionRef.current?.prev();
-  };
-
-  const goToPage = (pageNum: number) => {
-    if (!bookRef.current || !renditionRef.current || totalPages === 0) return;
-  
-    const location = pageNum-1; // 🔥 Page number → location % (0 to 1)
-    const cfi = bookRef.current.locations.cfiFromPercentage(location);
-  
-    if (cfi) {
-      renditionRef.current.display(cfi);
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      renditionRef.current?.prev();
+      setCurrentPage((prev) => Math.max(prev - 1, 1));
     }
   };
 
   return (
-    <div className="flex flex-col h-full">
-    {/* 🆕 Page Controls */}
-    <div className="flex justify-center p-2 gap-2 border-b border-border items-center">
-      <button onClick={goPrev} className="px-3 py-2 bg-gray-200 rounded">
-        Previous
+    <div className="h-full flex flex-col">
+      <div className="flex justify-between items-center p-2 bg-gray-100 border-b">
+        <button
+          onClick={goToPreviousPage}
+          disabled={currentPage === 1}
+          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50">
+          Previous
       </button>
       <span>
         Page {currentPage} of {totalPages}
       </span>
-      <button onClick={goNext} className="px-3 py-2 bg-gray-200 rounded">
+      <button
+        onClick={goToNextPage}
+        disabled={currentPage === totalPages}
+        className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50">
         Next
       </button>
-      <input
-        type="number"
-        min="1"
-        max={totalPages}
-        value={inputPage}
-        placeholder="Page #"
-        onChange={(e) => {
-          const value = parseInt(e.target.value);
-          if (!isNaN(value)) {
-            setInputPage(value);
-          }
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            goToPage(inputPage);
-          }
-        }}
-        className="w-16 border p-1 rounded text-center"
-      />
     </div>
-  
-    {/* 🆕 EPUB Viewer */}
     <div ref={containerRef} className="flex-1 overflow-auto" />
   </div>
-  
   );
-
- // return <div ref={containerRef} className="h-full" />;
 };
 
 
