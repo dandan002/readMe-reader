@@ -1,4 +1,4 @@
-import { UploadCloud, File, Loader, BookOpen, X } from "lucide-react";
+import { UploadCloud, File as FileIcon, Loader, BookOpen, X, Clipboard } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -20,7 +20,7 @@ import {
  * Reader page
  * ────────────────────────────────────────────────────────────
  * Implements client-side viewing for
- * EPUB (epub.js), DOCX (mammoth), and TXT (plain‑text).
+ * EPUB (epub.js), DOCX (mammoth), TXT (plain-text) **and pasted text**.
  * Translation panel is a placeholder – wire it to Flask later.
  */
 
@@ -94,7 +94,7 @@ const Reader = () => {
 
   //#endregion
 
-  //#region ───────────── Upload helpers ────────────
+  //#region ───────────── Upload & Paste helpers ────────────
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFiles = useCallback((fl: FileList | null) => {
@@ -115,6 +115,50 @@ const Reader = () => {
     },
     [handleFiles]
   );
+
+  // 🆕 Handle clipboard paste (Ctrl/Cmd+V)
+  const createFileFromText = (text: string): UploadedFile => {
+    const blob = new Blob([text], { type: "text/plain" });
+    const file = new window.File([blob], `pasted-${Date.now()}.txt`, {
+      type: "text/plain",
+    });
+    return { file, url: URL.createObjectURL(file), id: crypto.randomUUID() };
+  };
+
+  const handleClipboardText = useCallback(
+    (text: string) => {
+      if (!text.trim()) return;
+      const pastedFile = createFileFromText(text);
+      setFiles((prev) => [...prev, pastedFile]);
+      setActiveId(pastedFile.id);
+    },
+    []
+  );
+
+  // Global paste listener (captures ⌘/Ctrl + V)
+  useEffect(() => {
+    const pasteListener = (e: ClipboardEvent) => {
+      const text = e.clipboardData?.getData("text/plain") ?? "";
+      if (text && text.trim()) {
+        e.preventDefault();
+        handleClipboardText(text);
+      }
+    };
+    window.addEventListener("paste", pasteListener);
+    return () => window.removeEventListener("paste", pasteListener);
+  }, [handleClipboardText]);
+
+  // Manual "Paste" button (uses Clipboard API)
+  const pasteButtonHandler = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      handleClipboardText(text);
+    } catch (err) {
+      console.error("Clipboard read failed", err);
+    }
+  };
+
+  //#endregion
 
   const handleTextSelect = async (
     text: string,
@@ -193,6 +237,10 @@ const Reader = () => {
               <Button size="icon" variant="ghost" onClick={() => inputRef.current?.click()}>
                 <UploadCloud className="w-5 h-5" />
               </Button>
+              {/* 🆕 Paste button */}
+              <Button size="icon" variant="ghost" onClick={pasteButtonHandler}>
+                <Clipboard className="w-5 h-5" />
+              </Button>
               <input
                 ref={inputRef}
                 type="file"
@@ -244,7 +292,7 @@ const Reader = () => {
                 )}
                 onClick={() => setActiveId(f.id)}
               >
-                <File className="w-4 h-4" />
+                <FileIcon className="w-4 h-4" />
                 <span className="truncate flex-1 text-left">{f.file.name}</span>
               </Button>
             ))}
@@ -296,8 +344,8 @@ const DropZone = ({ onDrop, onClick }: { onDrop: any; onClick: any }) => (
     onClick={onClick}
   >
     <UploadCloud className="w-10 h-10 mb-4" />
-    <p className="text-lg font-medium">Click or drop files here</p>
-    <p className="text-secondary text-sm mt-1">EPUB, DOCX, TXT</p>
+    <p className="text-lg font-medium">Click, paste (⌘/Ctrl+V) or drop files here</p>
+    <p className="text-secondary text-sm mt-1">EPUB, DOCX, TXT, Clipboard</p>
   </div>
 );
 
@@ -362,7 +410,6 @@ const DocumentViewer = ({
 
 /** EPUB Viewer – epub.js (v0.3.x) */
 import ePub, { Book, Rendition } from "epubjs";
-import { set } from "date-fns";
 const EpubViewer = ({
   url,
   file,
@@ -539,7 +586,7 @@ const DocxViewer = ({
   );
 };
 
-/** TXT Viewer – read plain text and render */
+/** TXT & Pasted Text Viewer – read plain text and render */
 const TextViewer = ({
   file,
   onTextSelect,

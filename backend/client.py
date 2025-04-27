@@ -90,7 +90,7 @@ async def translate_with_groq(model: str, words: str, context: str, language: st
         model=model,
         messages=[{"role": "system", "content": prompt}],
         temperature=0.0,
-        max_completion_tokens=1024,
+        max_completion_tokens=324,
         response_format={"type": "json_object"},
     )
     # Groq returns the JSON directly in .content
