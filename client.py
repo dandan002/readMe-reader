@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 import asyncio
+from flask_cors import CORS
 
 # Load environment variables
 load_dotenv()
@@ -13,6 +14,7 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Create Flask app
 app = Flask(__name__)
+CORS(app)
 
 
 # Define the asynchronous translate function
@@ -98,4 +100,4 @@ def translate():
 
 # Start the Flask app
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "8080")), debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)
