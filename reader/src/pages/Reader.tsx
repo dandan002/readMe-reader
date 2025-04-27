@@ -42,6 +42,16 @@ const languages = [
     "Korean",
 ];
 
+const models = [
+    "gemini-2.5-flash-preview-04-17",
+    "gemini-2.0-flash",
+    "gemini-1.5-pro",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "llama-3.3-70b-versatile",
+    "qwen-qwq-32b",
+  ];
+
 const Reader = () => {
   //#region ───────────── Types & State ─────────────
   type UploadedFile = { file: File; url: string; id: string };
@@ -56,6 +66,7 @@ const Reader = () => {
   const [loading, setLoading] = useState<boolean>(false);
   // 🆕  state for the currently-chosen language
   const [targetLanguage, setTargetLanguage] = useState<string>(languages[0]);
+  const [targetModel, setTargetModel] = useState<string>(models[0]);
 
   //#endregion
 
@@ -96,6 +107,7 @@ const Reader = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          model: targetModel,
           target_words: text,
           context: context,
           target_language: language,
@@ -161,6 +173,19 @@ const Reader = () => {
                 {languages.map((lang) => (
                   <SelectItem key={lang} value={lang}>
                     {lang}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select defaultValue={targetModel} onValueChange={setTargetModel}>
+              <SelectTrigger className="w-full mb-2">
+                <SelectValue placeholder="Choose model" />
+              </SelectTrigger>
+              <SelectContent className="bg-background">
+                {models.map((model) => (
+                  <SelectItem key={model} value={model}>
+                    {model}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -442,18 +467,26 @@ const TranslationPanel = ({
                 <p>
                   <strong>Selected Text:</strong> {t.selectedText}
                 </p>
-                <p>
-                  <strong>Translation:</strong> {t.response.translation}
-                </p>
-                <p>
-                  <strong>Definition:</strong> {t.response.definition}
-                </p>
-                <p>
-                  <strong>Explanation:</strong> {t.response.explanation}
-                </p>
-                <p>
-                  <strong>Synonyms:</strong> {t.response.synonyms}
-                </p>
+                {t.response.translation !== "X" && (
+                  <p>
+                    <strong>Translation:</strong> {t.response.translation}
+                  </p>
+                )}
+                {t.response.definition !== "X" && (
+                  <p>
+                    <strong>Definition:</strong> {t.response.definition}
+                  </p>
+                )}
+                {t.response.explanation !== "X" && (
+                  <p>
+                    <strong>Explanation:</strong> {t.response.explanation}
+                  </p>
+                )}
+                {t.response.synonyms !== "X" && (
+                  <p>
+                    <strong>Synonyms:</strong> {t.response.synonyms}
+                  </p>
+                )}
               </div>
             ) : (
               <div>
