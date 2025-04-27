@@ -1,14 +1,12 @@
 FROM node:23-alpine AS build
 
-WORKDIR /reader
+WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
-
-# Install dependencies
+# Copy package files and install dependencies
+COPY package*.json ./
 RUN npm ci
 
-# Copy all files
+# Copy source code
 COPY . .
 
 # Build the application
@@ -17,10 +15,10 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
-# Copy built files to nginx
-COPY --from=build /reader/public /usr/share/nginx/html
+# Copy built files from build stage to nginx
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Copy custom nginx config if needed
+# Copy nginx configuration (optional, create if you need custom config)
 # COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
