@@ -259,8 +259,16 @@ const DocumentViewer = ({
   switch (type) {
     case "pdf":
       return <PdfViewer url={file.url} />;
-    case "epub":
-      return <EpubViewer url={file.url} />;
+      case "epub":
+        return (
+          <EpubViewer
+            url={file.url}
+            file={file.file}
+            onTextSelect={onTextSelect}
+            targetLanguage={targetLanguage}
+          />
+        );
+      
     case "docx":
       return (
         <DocxViewer
@@ -287,7 +295,17 @@ const PdfViewer = ({ url }: { url: string }) => (
 
 /** EPUB Viewer – epub.js (v0.3.x) */
 import ePub, { Book, Rendition } from "epubjs";
-const EpubViewer = ({ url }: { url: string }) => {
+const EpubViewer = ({
+  url,
+  file,
+  onTextSelect,
+  targetLanguage,
+}: {
+  url: string;
+  file: File;
+  onTextSelect: (selectedText: string, context: string, language: string) => void;
+  targetLanguage: string;
+}) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const bookRef = useRef<Book | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
@@ -295,22 +313,40 @@ const EpubViewer = ({ url }: { url: string }) => {
   useEffect(() => {
     const init = async () => {
       if (!containerRef.current) return;
-      bookRef.current = ePub(url, {});
+
+      //Actually read the file
+      const arrayBuffer = await file.arrayBuffer();
+
+      //Pass raw bytes, NOT blob url
+      bookRef.current = ePub(arrayBuffer);
+
       renditionRef.current = bookRef.current.renderTo(containerRef.current, {
         width: "100%",
         height: "100%",
       });
       renditionRef.current.display();
+
+      // Add text selection capture
+      renditionRef.current.on('selected', (cfiRange, contents) => {
+        const selection = contents.window.getSelection()?.toString();
+        if (selection && selection.trim().length > 0) {
+          const selectedText = selection.trim();
+          const context = selectedText;
+          onTextSelect(selectedText, context, targetLanguage);
+        }
+      });
     };
     init();
+
     return () => {
       renditionRef.current?.destroy();
       bookRef.current?.destroy();
     };
-  }, [url]);
+  }, [file]);
 
   return <div ref={containerRef} className="h-full" />;
 };
+
 
 /** DOCX Viewer – convert to HTML via mammoth.browser */
 const DocxViewer = ({
