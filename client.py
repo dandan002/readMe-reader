@@ -62,7 +62,6 @@ async def translate_with_gemini(model: str, words: str, context: str, language: 
             The following is the user input:\n
             
             Give me a translation of {words} into {language}. This was used in the following context: {context}"""
-<<<<<<< Updated upstream
     resp = gemini_client.models.generate_content(
         model=model,
         contents=prompt,
@@ -126,18 +125,6 @@ async def translate_with_groq(model: str, words: str, context: str, language: st
 # Flask setup
 app = Flask(__name__)
 CORS(app)
-=======
-    
-    response = client.models.generate_content(
-                model="gemini-2.5-pro-exp-03-25",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0,
-                    tools=[],
-                ),
-            )
-    return response
->>>>>>> Stashed changes
 
 @app.route("/translate", methods=["POST"])
 def translate():
