@@ -7,14 +7,40 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+// 🆕  UI components for the language dropdown
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
 
 /**
  * Reader page
  * ────────────────────────────────────────────────────────────
- * Implements client‑side viewing for PDF (native iframe),
+ * Implements client-side viewing for PDF (native iframe),
  * EPUB (epub.js), and DOCX (mammoth).
  * Translation panel is a placeholder – wire it to Flask later.
  */
+
+const languages = [
+    "English",
+    "Russian",
+    "Arabic",
+    "Hindi",
+    "Indonesian",
+    "Portuguese",
+    "Bengali",
+    "Turkish",
+    "Somali",
+    "Chinese",
+    "Spanish",
+    "French",
+    "German",
+    "Japanese",
+    "Korean",
+];
 
 const Reader = () => {
   //#region ───────────── Types & State ─────────────
@@ -28,6 +54,8 @@ const Reader = () => {
     { id: string; selectedText: string; context: string; response: any; expanded: boolean }[]
   >([]);
   const [loading, setLoading] = useState<boolean>(false);
+  // 🆕  state for the currently-chosen language
+  const [targetLanguage, setTargetLanguage] = useState<string>(languages[0]);
 
   //#endregion
 
@@ -54,19 +82,15 @@ const Reader = () => {
   );
 
   const handleTextSelect = async (text: string, context: string, language: string) => {
-    console.log("Selected Text:", text); // Log the selected text
-    console.log("Context:", context); // Log the context
-    console.log("Language:", language); // Log the target language
-    setSelectedText(text); // Update the state with the selected text
-    setContext(context); // Update the context state
-
-    await sendToBackend(text, context,language); // Send the selected text to the backend
+    setSelectedText(text);
+    setContext(context);
+    await sendToBackend(text, context, language);
   };
 
   const sendToBackend = async (text: string, context: string, language: string) => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:5000/translate", {
+      const response = await fetch("http://localhost:5001/translate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -74,7 +98,7 @@ const Reader = () => {
         body: JSON.stringify({
           target_words: text,
           context: context,
-          target_language: language
+          target_language: language,
         }),
       });
 
@@ -83,11 +107,10 @@ const Reader = () => {
       }
 
       const data = await response.json();
-      console.log("Backend Response:", data);
 
       setTranslations((prev) => [
         { id: crypto.randomUUID(), selectedText: text, context, response: data, expanded: true },
-        ...prev.map((t) => ({ ...t, expanded: false })), // Collapse all other translations
+        ...prev.map((t) => ({ ...t, expanded: false })),
       ]);
     } catch (error) {
       console.error("Error:", error);
@@ -114,19 +137,34 @@ const Reader = () => {
       <main className="flex-1 pt-16 flex overflow-hidden">
         {/* Library Sidebar */}
         <aside className="hidden lg:block w-72 border-r border-border bg-surface overflow-y-auto">
-          <div className="p-4 flex items-center gap-2">
-            <h2 className="text-lg font-semibold flex-1">Your Library</h2>
-            <Button size="icon" variant="ghost" onClick={() => inputRef.current?.click()}>
-              <UploadCloud className="w-5 h-5" />
-            </Button>
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".pdf,.epub,.docx"
-              multiple
-              hidden
-              onChange={(e) => handleFiles(e.target.files)}
-            />
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-lg font-semibold flex-1">Your Library</h2>
+              <Button size="icon" variant="ghost" onClick={() => inputRef.current?.click()}>
+                <UploadCloud className="w-5 h-5" />
+              </Button>
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".pdf,.epub,.docx"
+                multiple
+                hidden
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+            </div>
+            {/* 🆕 Language dropdown */}
+            <Select value={targetLanguage} onValueChange={setTargetLanguage}>
+              <SelectTrigger className="w-full mb-2">
+                <SelectValue placeholder="Choose language" />
+              </SelectTrigger>
+              <SelectContent>
+                {languages.map((lang) => (
+                  <SelectItem key={lang} value={lang}>
+                    {lang}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Separator />
           <ScrollArea className="h-[calc(100vh-4rem)] p-2 pr-0">
@@ -148,7 +186,7 @@ const Reader = () => {
           </ScrollArea>
         </aside>
 
-        {/* Empty‑state uploader for small screens */}
+        {/* Empty-state uploader for small screens */}
         {files.length === 0 && (
           <DropZone onDrop={onDrop} onClick={() => inputRef.current?.click()} />
         )}
@@ -160,7 +198,8 @@ const Reader = () => {
               <div className="h-full">
                 <DocumentViewer
                   file={activeFile}
-                  onTextSelect={handleTextSelect} // Pass the callback here
+                  onTextSelect={handleTextSelect}
+                  targetLanguage={targetLanguage}
                 />
               </div>
             </div>
@@ -184,7 +223,7 @@ export default Reader;
 
 //#region ─────────── Components ───────────
 
-/** Drop‑zone for first‑time upload */
+/** Drop-zone for first-time upload */
 const DropZone = ({ onDrop, onClick }: { onDrop: any; onClick: any }) => (
   <div
     className="flex-1 flex flex-col items-center justify-center cursor-pointer"
@@ -207,12 +246,14 @@ const getType = (name: string) => {
 };
 
 /** Wrapper to choose renderer */
-const DocumentViewer = ({ 
-  file, 
-  onTextSelect 
-}: { 
-  file: { file: File; url: string }; 
-  onTextSelect: (selectedText: string, context: string, language: string) => void; 
+const DocumentViewer = ({
+  file,
+  onTextSelect,
+  targetLanguage,
+}: {
+  file: { file: File; url: string };
+  onTextSelect: (selectedText: string, context: string, language: string) => void;
+  targetLanguage: string;
 }) => {
   const type = getType(file.file.name);
   switch (type) {
@@ -221,7 +262,13 @@ const DocumentViewer = ({
     case "epub":
       return <EpubViewer url={file.url} />;
     case "docx":
-      return <DocxViewer file={file.file} onTextSelect={onTextSelect} />;
+      return (
+        <DocxViewer
+          file={file.file}
+          onTextSelect={onTextSelect}
+          targetLanguage={targetLanguage}
+        />
+      );
     default:
       return (
         <div className="flex items-center justify-center h-full">
@@ -233,19 +280,9 @@ const DocumentViewer = ({
 
 /**
  * PDF Viewer – native browser rendering via iframe
- * ------------------------------------------------------------------
- * We rely on the browser's built‑in PDF renderer, which removes the
- * need for react‑pdf / pdfjs‑dist. Most modern browsers (Chrome,
- * Edge, Safari, Firefox) support this natively. The iframe is sized
- * to fill the available reader pane.
  */
 const PdfViewer = ({ url }: { url: string }) => (
-  <iframe
-    src={url}
-    title="PDF document"
-    className="w-full h-full"
-    style={{ border: "none" }}
-  />
+  <iframe src={url} title="PDF document" className="w-full h-full" style={{ border: "none" }} />
 );
 
 /** EPUB Viewer – epub.js (v0.3.x) */
@@ -276,9 +313,14 @@ const EpubViewer = ({ url }: { url: string }) => {
 };
 
 /** DOCX Viewer – convert to HTML via mammoth.browser */
-const DocxViewer = ({ file, onTextSelect }: { 
-  file: File; 
-  onTextSelect: (selectedText: string, context: string, language: string) => void; 
+const DocxViewer = ({
+  file,
+  onTextSelect,
+  targetLanguage,
+}: {
+  file: File;
+  onTextSelect: (selectedText: string, context: string, language: string) => void;
+  targetLanguage: string;
 }) => {
   const [html, setHtml] = useState<string | null>(null);
 
@@ -297,25 +339,22 @@ const DocxViewer = ({ file, onTextSelect }: {
     if (selection && selection.toString().trim().length > 0) {
       const selectedText = selection.toString().trim();
       const parentElement = selection.anchorNode?.parentElement;
-      const fullText = parentElement?.textContent || ""; // Get the full text of the parent element
-      const context = getContext(selectedText, fullText); // Extract context
-      console.log("Selected Text:", selectedText);
-      console.log("Context:", context);
-      const language = "Chinese"; // Set the target language (you can modify this as needed)
-      onTextSelect(selectedText, context, language); // Pass the selected text and context to the parent
+      const fullText = parentElement?.textContent || "";
+      const context = getContext(selectedText, fullText);
+      onTextSelect(selectedText, context, targetLanguage);
     }
   };
 
   const getContext = (selected: string, fullText: string) => {
     const words = fullText.split(/\s+/);
     const selectedWords = selected.trim().split(/\s+/);
-    const scope = selectedWords.length * 5; // Adjust the scope based on the number of words in the selection
+    const scope = selectedWords.length * 5;
 
     const selectionIndex = words.findIndex((_, idx) =>
       words.slice(idx, idx + selectedWords.length).join(" ") === selected
     );
 
-    if (selectionIndex === -1) return fullText; // If not found, return the full text
+    if (selectionIndex === -1) return fullText;
 
     const start = Math.max(0, selectionIndex - scope);
     const end = Math.min(words.length, selectionIndex + selectedWords.length + scope);
@@ -329,7 +368,7 @@ const DocxViewer = ({ file, onTextSelect }: {
     <article
       className="prose lg:prose-lg mx-auto p-8"
       dangerouslySetInnerHTML={{ __html: html }}
-      onMouseUp={handleMouseUp} // Attach the event listener here
+      onMouseUp={handleMouseUp}
     />
   );
 };
@@ -364,16 +403,27 @@ const TranslationPanel = ({
           >
             {t.expanded ? (
               <div>
-                <p><strong>Selected Text:</strong> {t.selectedText}</p>
-                <p><strong>Context:</strong> {t.context}</p>
-                <p><strong>Translation:</strong> {t.response.translation}</p>
-                <p><strong>Definition:</strong> {t.response.definition}</p>
-                <p><strong>Explanation:</strong> {t.response.explanation}</p>
-                <p><strong>Synonyms:</strong> {t.response.synonyms}</p>
+                <p>
+                  <strong>Selected Text:</strong> {t.selectedText}
+                </p>
+                <p>
+                  <strong>Translation:</strong> {t.response.translation}
+                </p>
+                <p>
+                  <strong>Definition:</strong> {t.response.definition}
+                </p>
+                <p>
+                  <strong>Explanation:</strong> {t.response.explanation}
+                </p>
+                <p>
+                  <strong>Synonyms:</strong> {t.response.synonyms}
+                </p>
               </div>
             ) : (
               <div>
-                <p className="truncate"><strong>Selected Text:</strong> {t.selectedText}</p>
+                <p className="truncate">
+                  <strong>Selected Text:</strong> {t.selectedText}
+                </p>
               </div>
             )}
           </div>
