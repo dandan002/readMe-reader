@@ -1,6 +1,6 @@
 FROM node:23-alpine AS build
 
-WORKDIR /reader
+WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json* ./
