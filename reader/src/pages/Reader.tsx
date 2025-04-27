@@ -92,10 +92,10 @@ const Reader = () => {
     [handleFiles]
   );
 
-  const handleTextSelect = async (text: string, context: string, language: string) => {
+  const handleTextSelect = async (text: string, context: string) => {
     setSelectedText(text);
     setContext(context);
-    await sendToBackend(text, context, language);
+    await sendToBackend(text, context, targetLanguage);
   };
 
   const sendToBackend = async (text: string, context: string, language: string) => {
@@ -336,15 +336,26 @@ const EpubViewer = ({
   const renditionRef = useRef<Rendition | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(0);
-  const isInitialized = useRef(false); // Track if the EPUB has been initialized
 
 
   useEffect(() => {
     console.log("EPUB Viewer mounted");
     const init = async () => {
-      if (!containerRef.current || isInitialized.current) return;
+      if (!containerRef.current) return;
 
-      isInitialized.current = true; 
+      if (renditionRef.current) {
+        renditionRef.current.destroy();
+        renditionRef.current = null;
+      }
+      if (bookRef.current) {
+        bookRef.current.destroy();
+        bookRef.current = null;
+      }
+
+      // Reset states
+      setCurrentPage(1);
+      setTotalPages(0);
+
       console.log("Initializing EPUB viewer");
 
       // Load the EPUB file
@@ -388,13 +399,17 @@ const EpubViewer = ({
 }, [file]);
 
 const goToNextPage = () => {
-  renditionRef.current?.next();
-  setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  if (currentPage < totalPages) {
+    renditionRef.current?.next();
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  }
 };
 
 const goToPreviousPage = () => {
-  renditionRef.current?.prev();
-  setCurrentPage((prev) => Math.max(prev - 1, 1));
+  if (currentPage > 1) {
+    renditionRef.current?.prev();
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  }
 };
 
 return (
