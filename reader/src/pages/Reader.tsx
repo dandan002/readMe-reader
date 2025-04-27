@@ -21,6 +21,11 @@ const Reader = () => {
   type UploadedFile = { file: File; url: string; id: string };
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [selectedText, setSelectedText] = useState<string>("");
+  const [context, setContext] = useState<string>("");
+  const [response, setResponse] = useState<any>(null); // Store the backend response
+  const [loading, setLoading] = useState<boolean>(false);
+
   //#endregion
 
   //#region ───────────── Upload helpers ────────────
@@ -44,6 +49,45 @@ const Reader = () => {
     },
     [handleFiles]
   );
+
+  const handleTextSelect = async (text: string, context: string, language: string) => {
+    console.log("Selected Text:", text); // Log the selected text
+    setSelectedText(text); // Update the state with the selected text
+    setContext(context); // Update the context state
+
+    await sendToBackend(text, context,language); // Send the selected text to the backend
+  };
+
+  const sendToBackend = async (text: string, context: string, language: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:5000/translate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          target_words: text,
+          context: context,
+          target_language: language
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch translation");
+      }
+
+      const data = await response.json();
+      console.log("Backend Response:", data);
+      setResponse(data); // Store the backend response
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   //#endregion
 
   const activeFile = files.find((f) => f.id === activeId) || null;
@@ -99,10 +143,20 @@ const Reader = () => {
         {activeFile && (
           <section className="flex-1 grid grid-cols-12">
             <div className="col-span-12 md:col-span-8 lg:col-span-9 border-r border-border overflow-auto">
-              <DocumentViewer file={activeFile} />
+              <div className="h-full">
+                <DocumentViewer
+                  file={activeFile}
+                  onTextSelect={handleTextSelect} // Pass the callback here
+                />
+              </div>
             </div>
             <div className="hidden md:block col-span-4 lg:col-span-3 h-full">
-              <TranslationPanel />
+              <TranslationPanel
+                selectedText={selectedText}
+                context={context}
+                response={response}
+                loading={loading}
+              />
             </div>
           </section>
         )}
@@ -140,7 +194,13 @@ const getType = (name: string) => {
 };
 
 /** Wrapper to choose renderer */
-const DocumentViewer = ({ file }: { file: { file: File; url: string } }) => {
+const DocumentViewer = ({ 
+  file, 
+  onTextSelect 
+}: { 
+  file: { file: File; url: string }; 
+  onTextSelect: (selectedText: string, context: string, language: string) => void; 
+}) => {
   const type = getType(file.file.name);
   switch (type) {
     case "pdf":
@@ -148,7 +208,7 @@ const DocumentViewer = ({ file }: { file: { file: File; url: string } }) => {
     case "epub":
       return <EpubViewer url={file.url} />;
     case "docx":
-      return <DocxViewer file={file.file} />;
+      return <DocxViewer file={file.file} onTextSelect={onTextSelect} />;
     default:
       return (
         <div className="flex items-center justify-center h-full">
@@ -203,7 +263,10 @@ const EpubViewer = ({ url }: { url: string }) => {
 };
 
 /** DOCX Viewer – convert to HTML via mammoth.browser */
-const DocxViewer = ({ file }: { file: File }) => {
+const DocxViewer = ({ file, onTextSelect }: { 
+  file: File; 
+  onTextSelect: (selectedText: string, context: string, language: string) => void; 
+}) => {
   const [html, setHtml] = useState<string | null>(null);
 
   useEffect(() => {
@@ -216,17 +279,58 @@ const DocxViewer = ({ file }: { file: File }) => {
     load();
   }, [file]);
 
+  const handleMouseUp = () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const selectedText = selection.toString().trim();
+      const parentElement = selection.anchorNode?.parentElement;
+      const fullText = parentElement?.textContent || ""; // Get the full text of the parent element
+      const context = getContext(selectedText, fullText); // Extract context
+      const language = "Chinese"; // Set the target language (you can modify this as needed)
+      onTextSelect(selectedText, context, language); // Pass the selected text and context to the parent
+    }
+  };
+
+  const getContext = (selected: string, fullText: string) => {
+    const words = fullText.split(/\s+/);
+    const selectedWords = selected.trim().split(/\s+/);
+    const scope = selectedWords.length * 5; // Adjust the scope based on the number of words in the selection
+
+    const selectionIndex = words.findIndex((_, idx) =>
+      words.slice(idx, idx + selectedWords.length).join(" ") === selected
+    );
+
+    if (selectionIndex === -1) return fullText; // If not found, return the full text
+
+    const start = Math.max(0, selectionIndex - scope);
+    const end = Math.min(words.length, selectionIndex + selectedWords.length + scope);
+
+    const contextWords = words.slice(start, end);
+    return contextWords.join(" ");
+  };
+
   if (!html) return <LoaderSpinner />;
   return (
     <article
       className="prose lg:prose-lg mx-auto p-8"
       dangerouslySetInnerHTML={{ __html: html }}
+      onMouseUp={handleMouseUp} // Attach the event listener here
     />
   );
 };
 
 /** Translation placeholder */
-const TranslationPanel = () => (
+const TranslationPanel = ({
+  selectedText,
+  context,
+  response,
+  loading,
+}: {
+  selectedText: string;
+  context: string;
+  response: any;
+  loading: boolean;
+}) => (
   <div className="h-full flex flex-col">
     <Card className="flex-1 rounded-none border-l-0">
       <CardHeader>
@@ -236,8 +340,20 @@ const TranslationPanel = () => (
       </CardHeader>
       <Separator />
       <CardContent className="flex-1 overflow-auto px-6 py-4 text-sm text-secondary">
-        Highlight text in the document to see translations and contextual examples
-        here. Hook this panel up to your Flask backend.
+        {loading ? (
+          <LoaderSpinner />
+        ) : response ? (
+          <div>
+            <p><strong>Selected Text:</strong> {selectedText}</p>
+            <p><strong>Context:</strong> {context}</p>
+            <p><strong>Translation:</strong> {response.translation}</p>
+            <p><strong>Definition:</strong> {response.definition}</p>
+            <p><strong>Explanation:</strong> {response.explanation}</p>
+            <p><strong>Synonyms:</strong> {response.synonyms}</p>
+          </div>
+        ) : (
+          <p>Highlight text in the document to see translations and contextual examples here.</p>
+        )}
       </CardContent>
     </Card>
   </div>
