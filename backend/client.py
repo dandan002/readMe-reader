@@ -36,13 +36,13 @@ async def translate_with_gemini(model: str, words: str, context: str, language: 
             with the keys: translation, definition, explanation, synonyms.
             The description of the keys are as follows:\n
             Translation:\n
-                - Format: "Translation: <the closest, context-aware translation of the target text> 
+                - Format: "<the closest, context-aware translation of the target text> 
             Definition:\n
-                - Format: "Definition: <the definition of the word in the target language>"\n
+                - Format: "<the definition of the word in the target language>"\n
             Explanation:\n
-                - Format: "Explanation: <a concise explanation of the translation/definition based on the context>"\n
+                - Format: "<a concise explanation of the translation/definition based on the context>"\n
             Synonyms:\n
-                - Format: "Synonyms: <a short list of up to 3 synonyms or near-equivalents>"\n
+                - Format: "<a short list of up to 3 synonyms or near-equivalents>"\n
             
             -If the target text is a phrase that's too long to have its own definition, provide 'X' in the key.\n 
 
