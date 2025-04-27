@@ -533,18 +533,26 @@ const TranslationPanel = ({
                 <p>
                   <strong>Selected Text:</strong> {t.selectedText}
                 </p>
-                <p>
-                  <strong>Translation:</strong> {t.response.translation}
-                </p>
-                <p>
-                  <strong>Definition:</strong> {t.response.definition}
-                </p>
-                <p>
-                  <strong>Explanation:</strong> {t.response.explanation}
-                </p>
-                <p>
-                  <strong>Synonyms:</strong> {t.response.synonyms}
-                </p>
+                {t.response.translation !== "X" && (
+                  <p>
+                    <strong>Translation:</strong> {t.response.translation}
+                  </p>
+                )}
+                {t.response.definition !== "X" && (
+                  <p>
+                    <strong>Definition:</strong> {t.response.definition}
+                  </p>
+                )}
+                {t.response.explanation !== "X" && (
+                  <p>
+                    <strong>Explanation:</strong> {t.response.explanation}
+                  </p>
+                )}
+                {t.response.synonyms !== "X" && (
+                  <p>
+                    <strong>Synonyms:</strong> {t.response.synonyms}
+                  </p>
+                )}
               </div>
             ) : (
               <div>
