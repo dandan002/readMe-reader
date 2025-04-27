@@ -6,7 +6,7 @@
   :root {
     --background: 60 33% 99%;
     --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
+    --card: 0 100% 100%;
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
@@ -42,4 +42,11 @@
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
+}
+
+/* css I might apply */
+@layer utilities {
+  .hover-float-up {
+    @apply transform transition-transform duration-300 hover:-translate-y-2;
+  }
 }
