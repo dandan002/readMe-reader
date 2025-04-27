@@ -8,10 +8,6 @@ from google.genai import types
 from groq import AsyncGroq
 from flask_cors import CORS
 
-# This is a simple Flask app that serves as a backend for the translation assistant.
-app = Flask(__name__)
-CORS(app, origins=["http://localhost:80", "http://frontend", "*"])
-
 # Load environment
 load_dotenv()
 
