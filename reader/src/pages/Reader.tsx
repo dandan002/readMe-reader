@@ -19,39 +19,39 @@ import {
 /**
  * Reader page
  * ────────────────────────────────────────────────────────────
- * Implements client-side viewing for PDF (native iframe),
- * EPUB (epub.js), and DOCX (mammoth).
+ * Implements client-side viewing for
+ * EPUB (epub.js), DOCX (mammoth), and TXT (plain‑text).
  * Translation panel is a placeholder – wire it to Flask later.
  */
 
 const languages = [
-    "English",
-    "Russian",
-    "Arabic",
-    "Hindi",
-    "Indonesian",
-    "Portuguese",
-    "Bengali",
-    "Turkish",
-    "Somali",
-    "Chinese",
-    "Spanish",
-    "French",
-    "German",
-    "Japanese",
-    "Korean",
+  "English",
+  "Russian",
+  "Arabic",
+  "Hindi",
+  "Indonesian",
+  "Portuguese",
+  "Bengali",
+  "Turkish",
+  "Somali",
+  "Chinese",
+  "Spanish",
+  "French",
+  "German",
+  "Japanese",
+  "Korean",
 ];
 
 const models = [
-    "gemini-2.5-flash-preview-04-17",
-    "gemini-2.0-flash",
-    "gemini-1.5-pro",
-    "meta-llama/llama-4-scout-17b-16e-instruct",
-    "meta-llama/llama-4-maverick-17b-128e-instruct",
-    "llama-3.3-70b-versatile",
-    "qwen-qwq-32b",
-    "llama-3.1-8b-instant"
-  ];
+  "gemini-2.5-flash-preview-04-17",
+  "gemini-2.0-flash",
+  "gemini-1.5-pro",
+  "meta-llama/llama-4-scout-17b-16e-instruct",
+  "meta-llama/llama-4-maverick-17b-128e-instruct",
+  "llama-3.3-70b-versatile",
+  "qwen-qwq-32b",
+  "llama-3.1-8b-instant",
+];
 
 const Reader = () => {
   //#region ───────────── Types & State ─────────────
@@ -62,14 +62,20 @@ const Reader = () => {
   const [context, setContext] = useState<string>("");
   const [response, setResponse] = useState<any>(null); // Store the backend response
   const [translations, setTranslations] = useState<
-    { id: string; selectedText: string; context: string; response: any; expanded: boolean }[]
+    {
+      id: string;
+      selectedText: string;
+      context: string;
+      response: any;
+      expanded: boolean;
+    }[]
   >([]);
   const [loading, setLoading] = useState<boolean>(false);
   // 🆕  state for the currently-chosen language
   const [targetLanguage, setTargetLanguage] = useState<string>(languages[0]);
   const [targetModel, setTargetModel] = useState<string>(models[0]);
 
-// Clear everything
+  // Clear everything
   const clearTranslations = useCallback(() => {
     setTranslations([]);
     setSelectedText("");
@@ -77,16 +83,16 @@ const Reader = () => {
     setResponse(null);
   }, []);
 
-// ─── Clear on switch ───────────────────────────────────────────────────────────
-useEffect(() => {
-  // whenever language, model or file changes, wipe out all previous translations
-  setTranslations([]);
-  setSelectedText("");
-  setContext("");
-  setResponse(null);
-}, [targetLanguage, targetModel, activeId]);
+  // ─── Clear on switch ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    // whenever language, model or file changes, wipe out all previous translations
+    setTranslations([]);
+    setSelectedText("");
+    setContext("");
+    setResponse(null);
+  }, [targetLanguage, targetModel, activeId]);
 
-// ────────────────────────────────────────────────────────────────────────────────
+  //#endregion
 
   //#region ───────────── Upload helpers ────────────
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -110,13 +116,21 @@ useEffect(() => {
     [handleFiles]
   );
 
-  const handleTextSelect = async (text: string, context: string, language: string) => {
+  const handleTextSelect = async (
+    text: string,
+    context: string,
+    language: string
+  ) => {
     setSelectedText(text);
     setContext(context);
     await sendToBackend(text, context, language);
   };
 
-  const sendToBackend = async (text: string, context: string, language: string) => {
+  const sendToBackend = async (
+    text: string,
+    context: string,
+    language: string
+  ) => {
     try {
       setLoading(true);
       const response = await fetch("http://localhost:5001/translate", {
@@ -139,7 +153,13 @@ useEffect(() => {
       const data = await response.json();
 
       setTranslations((prev) => [
-        { id: crypto.randomUUID(), selectedText: text, context, response: data, expanded: true },
+        {
+          id: crypto.randomUUID(),
+          selectedText: text,
+          context,
+          response: data,
+          expanded: true,
+        },
         ...prev.map((t) => ({ ...t, expanded: false })),
       ]);
     } catch (error) {
@@ -176,7 +196,7 @@ useEffect(() => {
               <input
                 ref={inputRef}
                 type="file"
-                accept=".pdf,.epub,.docx"
+                accept=".epub,.docx,.txt"
                 multiple
                 hidden
                 onChange={(e) => handleFiles(e.target.files)}
@@ -195,7 +215,7 @@ useEffect(() => {
                 ))}
               </SelectContent>
             </Select>
-            
+
             <Select defaultValue={targetModel} onValueChange={setTargetModel}>
               <SelectTrigger className="w-full mb-2">
                 <SelectValue placeholder="Choose model" />
@@ -211,7 +231,9 @@ useEffect(() => {
           </div>
           <Separator />
           <ScrollArea className="h-[calc(100vh-4rem)] p-2 pr-0">
-            {files.length === 0 && <p className="text-center text-secondary mt-10">No files yet.</p>}
+            {files.length === 0 && (
+              <p className="text-center text-secondary mt-10">No files yet.</p>
+            )}
             {files.map((f) => (
               <Button
                 key={f.id}
@@ -230,9 +252,7 @@ useEffect(() => {
         </aside>
 
         {/* Empty-state uploader for small screens */}
-        {files.length === 0 && (
-          <DropZone onDrop={onDrop} onClick={() => inputRef.current?.click()} />
-        )}
+        {files.length === 0 && <DropZone onDrop={onDrop} onClick={() => inputRef.current?.click()} />}
 
         {/* Active reader panes */}
         {activeFile && (
@@ -277,15 +297,15 @@ const DropZone = ({ onDrop, onClick }: { onDrop: any; onClick: any }) => (
   >
     <UploadCloud className="w-10 h-10 mb-4" />
     <p className="text-lg font-medium">Click or drop files here</p>
-    <p className="text-secondary text-sm mt-1">PDF, EPUB, DOCX</p>
+    <p className="text-secondary text-sm mt-1">EPUB, DOCX, TXT</p>
   </div>
 );
 
 /** Determine renderer by file extension */
 const getType = (name: string) => {
-  if (name.match(/\.pdf$/i)) return "pdf";
   if (name.match(/\.epub$/i)) return "epub";
   if (name.match(/\.docx$/i)) return "docx";
+  if (name.match(/\.txt$/i)) return "txt";
   return "unknown";
 };
 
@@ -296,26 +316,36 @@ const DocumentViewer = ({
   targetLanguage,
 }: {
   file: { file: File; url: string };
-  onTextSelect: (selectedText: string, context: string, language: string) => void;
+  onTextSelect: (
+    selectedText: string,
+    context: string,
+    language: string
+  ) => void;
   targetLanguage: string;
 }) => {
   const type = getType(file.file.name);
   switch (type) {
-    case "pdf":
-      return <PdfViewer url={file.url} />;
-      case "epub":
-        return (
-          <EpubViewer
-            url={file.url}
-            file={file.file}
-            onTextSelect={onTextSelect}
-            targetLanguage={targetLanguage}
-          />
-        );
-      
+    case "epub":
+      return (
+        <EpubViewer
+          url={file.url}
+          file={file.file}
+          onTextSelect={onTextSelect}
+          targetLanguage={targetLanguage}
+        />
+      );
+
     case "docx":
       return (
         <DocxViewer
+          file={file.file}
+          onTextSelect={onTextSelect}
+          targetLanguage={targetLanguage}
+        />
+      );
+    case "txt":
+      return (
+        <TextViewer
           file={file.file}
           onTextSelect={onTextSelect}
           targetLanguage={targetLanguage}
@@ -330,13 +360,6 @@ const DocumentViewer = ({
   }
 };
 
-/**
- * PDF Viewer – native browser rendering via iframe
- */
-const PdfViewer = ({ url }: { url: string }) => (
-  <iframe src={url} title="PDF document" className="w-full h-full" style={{ border: "none" }} />
-);
-
 /** EPUB Viewer – epub.js (v0.3.x) */
 import ePub, { Book, Rendition } from "epubjs";
 import { set } from "date-fns";
@@ -348,36 +371,30 @@ const EpubViewer = ({
 }: {
   url: string;
   file: File;
-  onTextSelect: (selectedText: string, context: string, language: string) => void;
+  onTextSelect: (
+    selectedText: string,
+    context: string,
+    language: string
+  ) => void;
   targetLanguage: string;
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const bookRef = useRef<Book | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
-  //to keep track of the pages 
+  //to keep track of the pages
   const [totalPages, setTotalPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [inputPage, setInputPage] = useState<number>(1);
 
   useEffect(() => {
-    console.log("EPUB Viewer mounted");
     const init = async () => {
       if (!containerRef.current) return;
 
-      if (renditionRef.current) {
-        renditionRef.current.destroy();
-        renditionRef.current = null;
-      }
-      if (bookRef.current) {
-        bookRef.current.destroy();
-        bookRef.current = null;
-      }
+      renditionRef.current?.destroy();
+      bookRef.current?.destroy();
 
       // Reset states
       setCurrentPage(1);
       setTotalPages(0);
-
-      console.log("Initializing EPUB viewer");
 
       // Load the EPUB file
       const arrayBuffer = await file.arrayBuffer();
@@ -391,23 +408,21 @@ const EpubViewer = ({
       renditionRef.current.display();
 
       bookRef.current.loaded.spine.then((spine) => {
-        if (spine){
+        if (spine) {
           setTotalPages(spine.length);
         }
       });
 
       // Add text selection capture
-    renditionRef.current.on("selected", (cfiRange, contents) => {
-      console.log("Text selected:", cfiRange);
-      const selection = contents.window.getSelection()?.toString();
-      if (selection && selection.trim().length > 0) {
-        const selectedText = selection.trim();
-        const context = selectedText; // For EPUB, we can use the selected text as context
-        onTextSelect(selectedText, context, targetLanguage);
-        // renditionRef.current?.display(cfiRange); // Highlight the selected text
-      }
-    });
-  };
+      renditionRef.current.on("selected", (cfiRange, contents) => {
+        const selection = contents.window.getSelection()?.toString();
+        if (selection && selection.trim().length > 0) {
+          const selectedText = selection.trim();
+          const context = selectedText; // For EPUB, we can use the selected text as context
+          onTextSelect(selectedText, context, targetLanguage);
+        }
+      });
+    };
     init();
 
     return () => {
@@ -436,24 +451,25 @@ const EpubViewer = ({
         <button
           onClick={goToPreviousPage}
           disabled={currentPage === 1}
-          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50">
+          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+        >
           Previous
-      </button>
-      <span>
-        Page {currentPage} of {totalPages}
-      </span>
-      <button
-        onClick={goToNextPage}
-        disabled={currentPage === totalPages}
-        className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50">
-        Next
-      </button>
+        </button>
+        <span>
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          onClick={goToNextPage}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
+      <div ref={containerRef} className="flex-1 overflow-auto" />
     </div>
-    <div ref={containerRef} className="flex-1 overflow-auto" />
-  </div>
   );
 };
-
 
 /** DOCX Viewer – convert to HTML via mammoth.browser */
 const DocxViewer = ({
@@ -462,7 +478,11 @@ const DocxViewer = ({
   targetLanguage,
 }: {
   file: File;
-  onTextSelect: (selectedText: string, context: string, language: string) => void;
+  onTextSelect: (
+    selectedText: string,
+    context: string,
+    language: string
+  ) => void;
   targetLanguage: string;
 }) => {
   const [html, setHtml] = useState<string | null>(null);
@@ -500,7 +520,10 @@ const DocxViewer = ({
     if (selectionIndex === -1) return fullText;
 
     const start = Math.max(0, selectionIndex - scope);
-    const end = Math.min(words.length, selectionIndex + selectedWords.length + scope);
+    const end = Math.min(
+      words.length,
+      selectionIndex + selectedWords.length + scope
+    );
 
     const contextWords = words.slice(start, end);
     return contextWords.join(" ");
@@ -516,6 +539,73 @@ const DocxViewer = ({
   );
 };
 
+/** TXT Viewer – read plain text and render */
+const TextViewer = ({
+  file,
+  onTextSelect,
+  targetLanguage,
+}: {
+  file: File;
+  onTextSelect: (
+    selectedText: string,
+    context: string,
+    language: string
+  ) => void;
+  targetLanguage: string;
+}) => {
+  const [text, setText] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const content = await file.text();
+      setText(content);
+    };
+    load();
+  }, [file]);
+
+  const handleMouseUp = () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const selectedText = selection.toString().trim();
+      const fullText = text || "";
+      const context = getContext(selectedText, fullText);
+      onTextSelect(selectedText, context, targetLanguage);
+    }
+  };
+
+  const getContext = (selected: string, fullText: string) => {
+    const words = fullText.split(/\s+/);
+    const selectedWords = selected.trim().split(/\s+/);
+    const scope = selectedWords.length * 5;
+
+    const selectionIndex = words.findIndex((_, idx) =>
+      words.slice(idx, idx + selectedWords.length).join(" ") === selected
+    );
+
+    if (selectionIndex === -1) return fullText;
+
+    const start = Math.max(0, selectionIndex - scope);
+    const end = Math.min(
+      words.length,
+      selectionIndex + selectedWords.length + scope
+    );
+
+    const contextWords = words.slice(start, end);
+    return contextWords.join(" ");
+  };
+
+  if (!text) return <LoaderSpinner />;
+
+  return (
+    <pre
+      className="whitespace-pre-wrap p-8 max-w-none"
+      onMouseUp={handleMouseUp}
+    >
+      {text}
+    </pre>
+  );
+};
+
 /** Translation placeholder */
 const TranslationPanel = ({
   translations,
@@ -523,7 +613,13 @@ const TranslationPanel = ({
   toggleExpand,
   clearTranslations,
 }: {
-  translations: { id: string; selectedText: string; context: string; response: any; expanded: boolean }[];
+  translations: {
+    id: string;
+    selectedText: string;
+    context: string;
+    response: any;
+    expanded: boolean;
+  }[];
   loading: boolean;
   toggleExpand: (id: string) => void;
   clearTranslations: () => void;
@@ -531,10 +627,10 @@ const TranslationPanel = ({
   <div className="h-full flex flex-col overflow-auto">
     <Card className="flex-1 rounded-none border-l-0">
       <CardHeader>
-      <div className="flex justify-between items-center w-full">
-        <CardTitle className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5" /> Translations
-        </CardTitle>
+        <div className="flex justify-between items-center w-full">
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5" /> Translations
+          </CardTitle>
           <Button
             size="icon"
             variant="ghost"
@@ -592,7 +688,9 @@ const TranslationPanel = ({
           </div>
         ))}
         {!loading && translations.length === 0 && (
-          <p className="text-center text-secondary">Highlight text to see translations here.</p>
+          <p className="text-center text-secondary">
+            Highlight text to see translations here.
+          </p>
         )}
       </CardContent>
     </Card>
