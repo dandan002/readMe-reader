@@ -10,9 +10,12 @@ import { cn } from "@/lib/utils";
 
 /**
  * Reader page * ──────────────────────────────────────────────────────────── * Implements client‑side viewing for PDF (react‑pdf + pdfjs‑dist), * EPUB (epub.js), and DOCX (mammoth). * Translation panel is a placeholder – wire it to Flask later. */
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> parent of aeeb49c (PDF support)
 
 const Reader = () => {
   //#region ───────────── Types & State ─────────────
