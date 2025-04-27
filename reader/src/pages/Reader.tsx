@@ -16,8 +16,24 @@ import { cn } from "@/lib/utils";
  * Translation panel is a placeholder – wire it to Flask later.
  */
 
+
+
+
 const Reader = () => {
   //#region ───────────── Types & State ─────────────
+  //to know the full text we have access to 
+  const [fullText, setFullText]=useState<string>("");
+  //to set and and keep track of our result, what we output 
+  const [translationResult, setTranslationResult]=useState<null|{
+    translation: string;
+    definition: string;
+    explanation: string;
+    synonyms: string;
+  }>(null);
+  //to keep track of whether or now our transflation has been processed, might not need later 
+  const [loadingTranslation, setLoadingTranslation]=useState<boolean>(false);
+
+
   type UploadedFile = { file: File; url: string; id: string };
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -47,6 +63,69 @@ const Reader = () => {
   //#endregion
 
   const activeFile = files.find((f) => f.id === activeId) || null;
+
+  //helper functions to help extract the data we will send to the api 
+  const handleMouseUp = async () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const selectedText = selection.toString().trim();
+      
+      const contextText = getContext(selectedText, fullText);
+  
+      if (contextText) {
+        const targetLanguage = "Spanish"; // Hardcoded for now
+        await sendToTranslationAPI(selectedText, contextText, targetLanguage);
+      }
+    }
+  };
+  
+  const getContext = (selected: string, fullText: string) => {
+    const words = fullText.split(/\s+/);
+    const selectedWords = selected.trim().split(/\s+/);
+    const scope = selectedWords.length * 5;
+  
+    const selectionIndex = words.findIndex((_, idx) =>
+      words.slice(idx, idx + selectedWords.length).join(' ') === selected
+    );
+  
+    if (selectionIndex === -1) return null;
+  
+    const start = Math.max(0, selectionIndex - scope);
+    const end = Math.min(words.length, selectionIndex + selectedWords.length + scope);
+  
+    const contextWords = words.slice(start, end);
+    return contextWords.join(' ');
+  };
+  
+  const sendToTranslationAPI = async (selected: string, context: string, language: string) => {
+    try {
+      setLoadingTranslation(true); // Start loading
+      const response = await fetch("http://localhost:5000/translate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          target_words: selected,
+          context: context,
+          target_language: language,
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to fetch translation");
+      }
+  
+      const data = await response.json();
+      console.log("Translation Result:", data);
+      setTranslationResult(data);
+    } catch (error) {
+      console.error("Translation Error:", error);
+    } finally {
+      setLoadingTranslation(false); // End loading
+    }
+  };
+  
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -99,10 +178,12 @@ const Reader = () => {
         {activeFile && (
           <section className="flex-1 grid grid-cols-12">
             <div className="col-span-12 md:col-span-8 lg:col-span-9 border-r border-border overflow-auto">
-              <DocumentViewer file={activeFile} />
+              <div onMouseUp={handleMouseUp} className="h-full">
+                <DocumentViewer file={activeFile} setFullText={setFullText} />
+              </div>  
             </div>
             <div className="hidden md:block col-span-4 lg:col-span-3 h-full">
-              <TranslationPanel />
+            <TranslationPanel result={translationResult} loading={loadingTranslation} />
             </div>
           </section>
         )}
@@ -140,7 +221,10 @@ const getType = (name: string) => {
 };
 
 /** Wrapper to choose renderer */
-const DocumentViewer = ({ file }: { file: { file: File; url: string } }) => {
+const DocumentViewer = ({ file, setFullText }: { 
+  file: { file: File; url: string };
+  setFullText: (text: string) => void;
+}) => {
   const type = getType(file.file.name);
   switch (type) {
     case "pdf":
@@ -148,7 +232,7 @@ const DocumentViewer = ({ file }: { file: { file: File; url: string } }) => {
     case "epub":
       return <EpubViewer url={file.url} />;
     case "docx":
-      return <DocxViewer file={file.file} />;
+      return <DocxViewer file={file.file} setFullText={setFullText} />;
     default:
       return (
         <div className="flex items-center justify-center h-full">
@@ -203,7 +287,7 @@ const EpubViewer = ({ url }: { url: string }) => {
 };
 
 /** DOCX Viewer – convert to HTML via mammoth.browser */
-const DocxViewer = ({ file }: { file: File }) => {
+const DocxViewer = ({ file, setFullText }: { file: File; setFullText: (text: string) => void }) => {
   const [html, setHtml] = useState<string | null>(null);
 
   useEffect(() => {
@@ -212,9 +296,11 @@ const DocxViewer = ({ file }: { file: File }) => {
       const arrayBuffer = await file.arrayBuffer();
       const { value } = await mammoth.convertToHtml({ arrayBuffer });
       setHtml(value);
+      setFullText(value.replace(/<[^>]+>/g, '')); 
+      // 👆 This strips the HTML tags so you get clean readable text into fullText
     };
     load();
-  }, [file]);
+  }, [file, setFullText]);
 
   if (!html) return <LoaderSpinner />;
   return (
@@ -225,8 +311,9 @@ const DocxViewer = ({ file }: { file: File }) => {
   );
 };
 
+
 /** Translation placeholder */
-const TranslationPanel = () => (
+const TranslationPanel = ({ result, loading }: { result: any, loading: boolean }) => (
   <div className="h-full flex flex-col">
     <Card className="flex-1 rounded-none border-l-0">
       <CardHeader>
@@ -236,12 +323,23 @@ const TranslationPanel = () => (
       </CardHeader>
       <Separator />
       <CardContent className="flex-1 overflow-auto px-6 py-4 text-sm text-secondary">
-        Highlight text in the document to see translations and contextual examples
-        here. Hook this panel up to your Flask backend.
+        {loading ? (
+          <LoaderSpinner />
+        ) : result ? (
+          <div>
+            <p><strong>Translation:</strong> {result.translation}</p>
+            <p><strong>Definition:</strong> {result.definition}</p>
+            <p><strong>Explanation:</strong> {result.explanation}</p>
+            <p><strong>Synonyms:</strong> {result.synonyms}</p>
+          </div>
+        ) : (
+          <p>Highlight text in the document to see translations and contextual examples here.</p>
+        )}
       </CardContent>
     </Card>
   </div>
 );
+
 
 /** Loader */
 const LoaderSpinner = () => (
