@@ -43,14 +43,14 @@ const languages = [
 ];
 
 const models = [
-    "gemini-2.5-flash-preview-04-17",
-    "gemini-2.0-flash",
-    "gemini-1.5-pro",
-    "meta-llama/llama-4-scout-17b-16e-instruct",
-    "meta-llama/llama-4-maverick-17b-128e-instruct",
-    "llama-3.3-70b-versatile",
-    "qwen-qwq-32b",
-  ];
+  "gemini-2.5-flash-preview-04-17",
+  "gemini-2.0-flash",
+  "gemini-1.5-pro",
+  "meta-llama/llama-4-scout-17b-16e-instruct",
+  "meta-llama/llama-4-maverick-17b-128e-instruct",
+  "llama-3.3-70b-versatile",
+  "qwen-qwq-32b",
+];
 
 const Reader = () => {
   //#region ───────────── Types & State ─────────────
@@ -334,120 +334,93 @@ const EpubViewer = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const bookRef = useRef<Book | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
-  //to keep track of the pages 
-  const [totalPages, setTotalPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [inputPage, setInputPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(0);
+  const isInitialized = useRef(false); // Track if the EPUB has been initialized
+
 
   useEffect(() => {
+    console.log("EPUB Viewer mounted");
     const init = async () => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || isInitialized.current) return;
 
-      //Actually read the file
+      isInitialized.current = true; 
+      console.log("Initializing EPUB viewer");
+
+      // Load the EPUB file
       const arrayBuffer = await file.arrayBuffer();
-
-      //Pass raw bytes, NOT blob url
       bookRef.current = ePub(arrayBuffer);
 
+      // Render the EPUB to the container
       renditionRef.current = bookRef.current.renderTo(containerRef.current, {
         width: "100%",
         height: "100%",
+        flow: "paginated", // Enable paginated scrolling
       });
+
       renditionRef.current.display();
 
-      await bookRef.current.ready;
-      await bookRef.current.locations.generate(5000);
-
-      setTotalPages(bookRef.current.locations.length())
-      renditionRef.current.on("relocated", (location) => {
-        if (!bookRef.current?.locations || !location?.start?.cfi) {
-          setCurrentPage(1);
-          return;
-        }
-      
-        const percentage = bookRef.current.locations.percentageFromCfi(location.start.cfi);
-        const page = Math.round(percentage * bookRef.current.locations.length()); // 🔥
-        setCurrentPage(page || 1);
-      });
-
-      // Add text selection capture
-      renditionRef.current.on('selected', (cfiRange, contents) => {
-        const selection = contents.window.getSelection()?.toString();
-        if (selection && selection.trim().length > 0) {
-          const selectedText = selection.trim();
-          const context = selectedText;
-          onTextSelect(selectedText, context, targetLanguage);
+      // Set up page navigation
+      bookRef.current.loaded.spine.then((spine) => {
+        if (spine) {
+        setTotalPages(spine.length);
         }
       });
-    };
-    init();
-
-    return () => {
-      renditionRef.current?.destroy();
-      bookRef.current?.destroy();
-    };
-  }, [file]);
-
-  const goNext = () => {
-    renditionRef.current?.next();
+    // Add text selection capture
+    renditionRef.current.on("selected", (cfiRange, contents) => {
+      console.log("Text selected:", cfiRange);
+      const selection = contents.window.getSelection()?.toString();
+      if (selection && selection.trim().length > 0) {
+        const selectedText = selection.trim();
+        const context = selectedText; // For EPUB, we can use the selected text as context
+        onTextSelect(selectedText, context, targetLanguage);
+        // renditionRef.current?.display(cfiRange); // Highlight the selected text
+      }
+    });
   };
 
-  const goPrev = () => {
-    renditionRef.current?.prev();
-  };
+  init();
 
-  const goToPage = (pageNum: number) => {
-    if (!bookRef.current || !renditionRef.current || totalPages === 0) return;
-  
-    const location = pageNum-1; // 🔥 Page number → location % (0 to 1)
-    const cfi = bookRef.current.locations.cfiFromPercentage(location);
-  
-    if (cfi) {
-      renditionRef.current.display(cfi);
-    }
+  return () => {
+    renditionRef.current?.destroy();
+    bookRef.current?.destroy();
   };
+}, [file]);
 
-  return (
-    <div className="flex flex-col h-full">
-    {/* 🆕 Page Controls */}
-    <div className="flex justify-center p-2 gap-2 border-b border-border items-center">
-      <button onClick={goPrev} className="px-3 py-2 bg-gray-200 rounded">
+const goToNextPage = () => {
+  renditionRef.current?.next();
+  setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+};
+
+const goToPreviousPage = () => {
+  renditionRef.current?.prev();
+  setCurrentPage((prev) => Math.max(prev - 1, 1));
+};
+
+return (
+  <div className="h-full flex flex-col">
+    <div className="flex justify-between items-center p-2 bg-gray-100 border-b">
+      <button
+        onClick={goToPreviousPage}
+        disabled={currentPage === 1}
+        className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+      >
         Previous
       </button>
       <span>
         Page {currentPage} of {totalPages}
       </span>
-      <button onClick={goNext} className="px-3 py-2 bg-gray-200 rounded">
+      <button
+        onClick={goToNextPage}
+        disabled={currentPage === totalPages}
+        className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+      >
         Next
       </button>
-      <input
-        type="number"
-        min="1"
-        max={totalPages}
-        value={inputPage}
-        placeholder="Page #"
-        onChange={(e) => {
-          const value = parseInt(e.target.value);
-          if (!isNaN(value)) {
-            setInputPage(value);
-          }
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            goToPage(inputPage);
-          }
-        }}
-        className="w-16 border p-1 rounded text-center"
-      />
     </div>
-  
-    {/* 🆕 EPUB Viewer */}
     <div ref={containerRef} className="flex-1 overflow-auto" />
   </div>
-  
-  );
-
- // return <div ref={containerRef} className="h-full" />;
+);
 };
 
 
@@ -545,26 +518,18 @@ const TranslationPanel = ({
                 <p>
                   <strong>Selected Text:</strong> {t.selectedText}
                 </p>
-                {t.response.translation !== "X" && (
-                  <p>
-                    <strong>Translation:</strong> {t.response.translation}
-                  </p>
-                )}
-                {t.response.definition !== "X" && (
-                  <p>
-                    <strong>Definition:</strong> {t.response.definition}
-                  </p>
-                )}
-                {t.response.explanation !== "X" && (
-                  <p>
-                    <strong>Explanation:</strong> {t.response.explanation}
-                  </p>
-                )}
-                {t.response.synonyms !== "X" && (
-                  <p>
-                    <strong>Synonyms:</strong> {t.response.synonyms}
-                  </p>
-                )}
+                <p>
+                  <strong>Translation:</strong> {t.response.translation}
+                </p>
+                <p>
+                  <strong>Definition:</strong> {t.response.definition}
+                </p>
+                <p>
+                  <strong>Explanation:</strong> {t.response.explanation}
+                </p>
+                <p>
+                  <strong>Synonyms:</strong> {t.response.synonyms}
+                </p>
               </div>
             ) : (
               <div>
