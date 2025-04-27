@@ -25,17 +25,17 @@ async def translate_response(words, context, language):
             with the keys: translation, definition, explanation, synonyms.
             The description of the keys are as follows:\n
             Translation:\n
-                - Format: "Translation: <the closest, context-aware translation of the target text> 
+                - the closest, context-aware translation of the target text\n
             Definition:\n
-                - Format: "Definition: <the definition of the word in the target language>"\n
+                - the definition of the word in the target language\n
             Explanation:\n
-                - Format: "Explanation: <a concise explanation of the translation/definition based on the context>"\n
+                - a concise explanation of the translation/definition based on the context\n
             Synonyms:\n
-                - Format: "Synonyms: <a short list of up to 3 synonyms or near-equivalents>"\n
+                - a short list of up to 3 synonyms or near-equivalents\n
             
-            -If the target text is a phrase that's too long to have its own definition, provide 'X' in the key.\n 
+            -If the target text is a phrase that's too long to have its own definition, provide 'X' in the definition key.\n 
 
-            -If the language of the target text is the same as the target language, provide 'X' in the key.\n 
+            -If the language of the target text is the same as the target language, provide 'X' in the translation key.\n 
             
             Everything in the JSON response should be in the target language.\n
             The JSON response should be formatted as follows:\n
@@ -51,7 +51,7 @@ async def translate_response(words, context, language):
             The following is the user input:\n
             
             Give me a translation of {words} into {language}. This was used in the following context: {context}"""
-        
+    
     response = client.models.generate_content(
                 model="gemini-2.5-pro-exp-03-25",
                 contents=prompt,
@@ -60,6 +60,7 @@ async def translate_response(words, context, language):
                     tools=[],
                 ),
             )
+    print(f"Response: {response.text}")
     return response
 
 # Define the /translate POST route
