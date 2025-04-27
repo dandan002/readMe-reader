@@ -92,10 +92,10 @@ const Reader = () => {
     [handleFiles]
   );
 
-  const handleTextSelect = async (text: string, context: string) => {
+  const handleTextSelect = async (text: string, context: string, language: string) => {
     setSelectedText(text);
     setContext(context);
-    await sendToBackend(text, context, targetLanguage);
+    await sendToBackend(text, context, language);
   };
 
   const sendToBackend = async (text: string, context: string, language: string) => {
