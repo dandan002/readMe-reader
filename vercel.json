@@ -1,0 +1,14 @@
+{
+    "buildCommand": "cd frontend && npm install && npm run build",
+    "outputDirectory": "frontend/build",
+    "rewrites": [
+      { "source": "/api/translate", "destination": "/api/translate" },
+      { "source": "/(.*)", "destination": "/frontend/build/$1" }
+    ],
+    "functions": {
+      "api/translate.py": {
+        "memory": 1024,
+        "maxDuration": 10
+      }
+    }
+  }
