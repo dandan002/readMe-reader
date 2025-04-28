@@ -177,7 +177,7 @@ const Reader = () => {
   ) => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:5001/translate", {
+      const response = await fetch(getApiUrl('/translate'), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -410,6 +410,7 @@ const DocumentViewer = ({
 
 /** EPUB Viewer – epub.js (v0.3.x) */
 import ePub, { Book, Rendition } from "epubjs";
+import { getApiUrl } from "@/lib/api";
 const EpubViewer = ({
   url,
   file,
