@@ -10,23 +10,22 @@ const LearnMore = () => {
         <section className="text-center">
           <h1 className="text-4xl font-bold mb-6 mt-12 text-black">Learn More About Us</h1>
           <p className="text-black max-w-2xl mx-auto">
-            Discover the features, mission, and vision behind our innovative application.
+            Discover the features, mission, and vision behind readMe.
           </p>
           
           <div className="mt-12 space-y-8 max-w-3xl mx-auto">
             <div className="bg-white shadow-md rounded-lg p-8 border border-blue-100 hover:shadow-lg transition-shadow">
               <h2 className="text-2xl font-semibold mb-4 text-black">Our Mission</h2>
               <p className="text-black">
-                We're committed to providing simple, secure, and intuitive solutions that empower users in their financial journey.
+                We're committed to providing a simple platform for reading foreign text.
               </p>
             </div>
             
             <div className="bg-white shadow-md rounded-lg p-8 border border-blue-100 hover:shadow-lg transition-shadow">
               <h2 className="text-2xl font-semibold mb-4 text-black">Key Features</h2>
               <ul className="text-black space-y-3 list-disc list-inside">
-                <li>Bank-grade security</li>
-                <li>Real-time transaction monitoring</li>
-                <li>AI-powered financial insights</li>
+                <li>Wide choice of LLMs</li>
+                <li>Support for .docx, .txt, .epub, copy/paste</li>
                 <li>Seamless user experience</li>
               </ul>
             </div>
