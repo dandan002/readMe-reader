@@ -1,6 +1,5 @@
 import { UploadCloud, File as FileIcon, Loader, BookOpen, X, Clipboard } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Helmet } from "react-helmet";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,15 +55,6 @@ const models = [
 ];
 
 const Reader = () => {
-  <Helmet>
-    <title>ReadMe</title>
-    <meta name="description" content="Read and translate documents" />
-    <link rel="canonical" href="/reader" />
-    <meta property="og:title" content="Reader" />
-    <meta property="og:description" content="Read and translate documents" />
-    <meta property="og:url" content="/reader" />
-  </Helmet>
-
   //#region ───────────── Types & State ─────────────
   type UploadedFile = { file: File; url: string; id: string };
   const [files, setFiles] = useState<UploadedFile[]>([]);
