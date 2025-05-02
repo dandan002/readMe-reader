@@ -2,7 +2,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
 const LearnMore = () => {
-  return (
+  return (  
     <div className="min-h-screen bg-blue-50">
       <Navigation />
       
